@@ -17,15 +17,15 @@ L_PIECE  = {{false, false, false, false},
 
 
 S_PIECE = {{false, false, false, false},
-		  		 {false, false, true, true},
-		   		 {false, true, true, false},
-		   		 {false, false, false, false}}
+		   {false, false, true, true},
+		   {false, true, true, false},
+		   {false, false, false, false}}
 
 
 Z_PIECE = {{false, false, false, false},
-		  		 {false, true, true, false},
-		   		 {false, false, true, true},
-		   		 {false, false, false, false}}
+		   {false, true, true, false},
+		   {false, false, true, true},
+		   {false, false, false, false}}
 
 --####################
 
@@ -52,13 +52,15 @@ IMAGE_block_green = love.graphics.newImage("resources/block_green.png")
 
 
 TETRIS_PIECES = {T_PIECE, I_PIECE_HORIZ, J_PIECE, L_PIECE, O_PIECE, S_PIECE, Z_PIECE}
+TETRIS_PIECES_NAME = {"T_PIECE", "I_PIECE_HORIZ", "J_PIECE", "L_PIECE", "O_PIECE", "S_PIECE", "Z_PIECE"}
 PIECE_COLORS = {IMAGE_block_red, IMAGE_block_green}
 
 TETRIS_PIECE_SIZE = table.getn(TETRIS_PIECES)
 PIECE_COLOR_SIZE = table.getn(PIECE_COLORS)
 
 function getRandomTetrisPiece()
-	return TETRIS_PIECES[math.random(1,TETRIS_PIECE_SIZE)]
+	num = math.random(1,TETRIS_PIECE_SIZE)
+	return TETRIS_PIECES[num],TETRIS_PIECES_NAME[num]
 end
 
 function getRandomBlockColor()

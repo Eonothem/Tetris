@@ -1,5 +1,6 @@
 require("pieces")
 require("Square")
+require("Piece")
 require("audio")
 require("math")
 require("AnAL")
@@ -16,31 +17,14 @@ WINDOW_WIDTH = GRID_WIDTH*SQUARE_WIDTH+UI_WIDTH
 WINDOW_HEIGHT = GRID_HEIGHT*SQUARE_WIDTH
 
 GAME_OVER = false
-GAME_SPEED = 5 --pps
+GAME_SPEED = 50--pps
 dt = 0
 
 SCORE = 0
 SCORE_CONSTANT = 1005
 
 
---Initiate Tetris Piece 
-fallingPiece = getRandomTetrisPiece()
-fallingPieceColor = getRandomBlockColor()
 
-fallingPieceStartY = -SQUARE_WIDTH*2
-fallingPieceStartX = (GRID_WIDTH*SQUARE_WIDTH)/2-(2*SQUARE_WIDTH)
-
-fallingPieceY = fallingPieceStartY
-fallingPieceX = fallingPieceStartX
-
-fallingPieceStartRow = 1
-fallingPieceStartCol = math.floor(GRID_WIDTH/2)-2
-
--- fallingPieceRow = fallingPieceStartRow
--- fallingPieceCol = fallingPieceStartCol
-
-fallingPieceRow = fallingPieceStartRow
-fallingPieceCol = fallingPieceStartCol
 
 IMAGE_grid_pattern = love.graphics.newImage("resources/grid_pattern.png")
 IMAGE_hitmarker = love.graphics.newImage("resources/hitmarker.png")
@@ -48,6 +32,9 @@ IMAGE_hitmarker = love.graphics.newImage("resources/hitmarker.png")
 
 CURRENT_SONG = MUSIC_sandstorm
 
+--Orgin is at Row 2 Col 3
+offsetX = 3
+offsetY = 2
 
 
 --##################################################
@@ -56,8 +43,26 @@ function love.load()
 	snoop = love.graphics.newImage("resources/snoop_square.bmp")
 	ANIMATION_snoop = newAnimation(snoop, 290, 595, 0.04, 0)
 	
+	--Initiate Tetris Piece 
+	fallingPieceColor = getRandomBlockColor()
+
+	fallingPieceStartY = -SQUARE_WIDTH*2
+	fallingPieceStartRow = -1
+	fallingPieceStartX = 0--(GRID_WIDTH*SQUARE_WIDTH)/2-(2*SQUARE_WIDTH)
+	fallingPieceStartCol = 1
+
+	
 
 
+	
+
+	piece, name = getRandomTetrisPiece()
+
+
+	classFallingPiece = Piece(piece, fallingPieceStartX, fallingPieceStartY, name)
+	
+
+	--Windows Settings
 	love.window.setMode(WINDOW_WIDTH, WINDOW_HEIGHT)
 	--Light Blue
 	love.graphics.setBackgroundColor(0,170,255)
@@ -73,28 +78,36 @@ function love.update(dt)
 	--Check Powerups
 	checkPowerups(dt)
 
+
+	
+
+	
 	--GAME IS PLAYING
 	--fallingPieceY = fallingPieceY+2
 	if not GAME_OVER then
 
 		if moveFallingPiece(0,GAME_SPEED) == false then
-			if fallingPieceX == fallingPieceStartX and fallingPieceY == fallingPieceStartY then
+			
+
+			if classFallingPiece.x == fallingPieceStartX and classFallingPiece.y == fallingPieceStartY then
 				GAME_OVER = true
 				CURRENT_SONG:stop()
 				MUSIC_violin:play()
 			end
 
 			if GAME_OVER == false then
-				placeFallingPiece()
+				--print("--new--")
 				newFallingPiece()
 			end
 		end
 
-		fallingPieceRow = coordToGrid(fallingPieceY)
-		fallingPieceCol = coordToGrid(fallingPieceX)
+		
+		
 
 		SCORE = SCORE+checkFullRows()
 	end
+
+	--print(grid[20][3].blockColor)
 end
 
 function updateSnoop(dt)
@@ -233,24 +246,15 @@ function love.draw()
 	
 
 	--Draws falling pieces
-	for i=1, table.getn(fallingPiece) do
-		for j=1, table.getn(fallingPiece[2]) do
+	for i=1, table.getn(classFallingPiece.blockArr) do
+		for j=1, table.getn(classFallingPiece.blockArr[2]) do
 			
-			if fallingPiece[i][j] == true then
-				love.graphics.draw(fallingPieceColor, fallingPieceX+(j*SQUARE_WIDTH), fallingPieceY+(i*SQUARE_WIDTH), 0, SQUARE_SCALE_FACTOR, SQUARE_SCALE_FACTOR)
+			if classFallingPiece.blockArr[i][j] == true then
+				love.graphics.draw(fallingPieceColor, classFallingPiece.x+(j*SQUARE_WIDTH), classFallingPiece.y+(i*SQUARE_WIDTH), 0, SQUARE_SCALE_FACTOR, SQUARE_SCALE_FACTOR)
 			end
 		end
 	end
 
-	for i=1, table.getn(grid) do
-		for j=1, table.getn(grid[2]) do
-
-			if grid[i][j].blockColor ~= "NULL" then
-				love.graphics.draw(grid[i][j].blockColor, gridToCoordinates(j), gridToCoordinates(i), 0, SQUARE_SCALE_FACTOR, SQUARE_SCALE_FACTOR)
-
-			end
-		end
-	end
 
 	if weedMode then
 		ANIMATION_snoop:draw((GRID_WIDTH*SQUARE_WIDTH)-50,snoopY)
@@ -259,7 +263,7 @@ function love.draw()
 	love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 10) end
 
 function resetGame()
-	CURRENT_SONG:play()
+	--CURRENT_SONG:play()
 
 	grid = {}
 
@@ -285,44 +289,47 @@ end
 --##################################################
 
 function newFallingPiece()
-	fallingPiece = getRandomTetrisPiece()
+	piece, name = getRandomTetrisPiece()
 
-	fallingPieceRow = fallingPieceStartRow
-	fallingPieceCol = fallingPieceStartCol
+	classFallingPiece.blockArr = piece
+	classFallingPiece.name = name
 
-	fallingPieceX = fallingPieceStartX
-	fallingPieceY = fallingPieceStartY
+	classFallingPiece.row = fallingPieceStartRow
+	classFallingPiece.col = fallingPieceStartCol
+
+	classFallingPiece.x = fallingPieceStartX
+	classFallingPiece.y = fallingPieceStartY
 
 	fallingPieceColor = getRandomBlockColor()
 end
 
 
-function placeFallingPiece()
-	print("Placing")
-	print("----")
-	for i = 1, table.getn(fallingPiece) do
-		for j = 1, table.getn(fallingPiece[2]) do
-				if fallingPiece[i][j] == true then
-					print(i+fallingPieceRow, j+fallingPieceCol)
-				grid[i+fallingPieceRow][j+fallingPieceCol].blockColor = fallingPieceColor
-			end
-		end
-	end
-	print("------")
-
-
-	SOUND_hitmarker:play()
-end
-
 function moveFallingPiece(dx, dy)
-	fallingPieceX = fallingPieceX+dx
-	fallingPieceY = fallingPieceY+dy
+	classFallingPiece.x = classFallingPiece.x+dx
+	classFallingPiece.y = classFallingPiece.y+dy
+
+	classFallingPiece.row = coordToGrid(classFallingPiece.y)
+	classFallingPiece.col = coordToGrid(classFallingPiece.x)
+
+
+	
+
+	
 
 	if not fallingPieceIsLegal(dx,dy) then
-		fallingPieceX = fallingPieceX-dx
-	    fallingPieceY = fallingPieceY-dy
+		classFallingPiece.x = classFallingPiece.x-dx
+	    classFallingPiece.y = classFallingPiece.y-dy
+	   
+	    classFallingPiece.row = coordToGrid(classFallingPiece.y)
+		classFallingPiece.col = coordToGrid(classFallingPiece.x)
 	    return false
 	end
+
+	--print("Row:")
+	--print(classFallingPiece.row,coordToGrid(classFallingPiece.y))
+	--print("Col:")
+	--print(classFallingPiece.col,coordToGrid(classFallingPiece.x))
+	--print("-----")
 
 	return true
 end
@@ -330,20 +337,27 @@ end
 function fallingPieceIsLegal(dx,dy)
 	canMove = true
 
-	for i=1, table.getn(fallingPiece) do
-		for j=1, table.getn(fallingPiece[2]) do
+	for i=1, table.getn(classFallingPiece.blockArr) do
+		for j=1, table.getn(classFallingPiece.blockArr[2]) do
 			
-			if fallingPiece[i][j] == true then
+			if classFallingPiece.blockArr[i][j] == true then
 
 				--print(grid[coordToGrid(fallingPieceY)+i][coordToGrid(fallingPieceX)+j])
 
-				if fallingPieceX+(j*SQUARE_WIDTH) < 0 then
+				if classFallingPiece.x+(j*SQUARE_WIDTH) < 0 then
 					canMove = false
-				elseif fallingPieceX+(j*SQUARE_WIDTH) > (SQUARE_WIDTH*GRID_WIDTH)-1 then
+				elseif classFallingPiece.x+(j*SQUARE_WIDTH) > (SQUARE_WIDTH*GRID_WIDTH)-1 then
 					canMove = false
-				elseif fallingPieceY+(i*SQUARE_WIDTH) > (SQUARE_WIDTH*GRID_HEIGHT)-SQUARE_WIDTH then
+				elseif classFallingPiece.y+(i*SQUARE_WIDTH) > (SQUARE_WIDTH*GRID_HEIGHT)-SQUARE_WIDTH then
 					canMove = false
-				elseif grid[coordToGrid(fallingPieceY)+i][coordToGrid(fallingPieceX)+j].blockColor ~= "NULL" then
+				elseif grid[classFallingPiece.row+i][classFallingPiece.col+j].blockColor ~= "NULL" then
+					print("Row:")
+					print(classFallingPiece.row,coordToGrid(classFallingPiece.y))
+					print("Col:")
+					print(classFallingPiece.col,coordToGrid(classFallingPiece.x))
+					print("Contains")
+					print (grid[classFallingPiece.row+i][classFallingPiece.col+j].blockColor)
+					print("-----")
 					canMove = false
 				end
 
@@ -361,29 +375,29 @@ end
 
 --Rotates a piece 
 function rotateFallingPiece()
-	oldFallingPiece = fallingPiece
+	oldFallingPiece = classFallingPiece
 
-	if fallingPiece == I_PIECE_HORIZ then
-		fallingPiece = I_PIECE_VERT
-	elseif fallingPiece == I_PIECE_VERT then
-		fallingPiece = I_PIECE_HORIZ
+	if classFallingPiece.blockArr == I_PIECE_HORIZ then
+		classFallingPiece.blockArr = I_PIECE_VERT
+	elseif classFallingPiece.blockArr == I_PIECE_VERT then
+		classFallingPiece.blockArr = I_PIECE_HORIZ
 
-	elseif fallingPiece ~= O_PIECE then
-		fallingPiece = rotateWithMath()
+	elseif classFallingPiece.blockArr ~= O_PIECE then
+		classFallingPiece.blockArr = rotateWithMath()
 	end
 
 	--If the move isn't leagal we just reset it
 	if not fallingPieceIsLegal(0,0) then
-		fallingPiece = oldFallingPiece
+		fallingPiece.blockArr = oldFallingPiece.blockArr
 	end
 end
 
 --Uses matracies and all that fun stuff to rotate a piece
 function rotateWithMath()
-	oldFallingPiece = fallingPiece
+	oldFallingPiece = classFallingPiece
 
-	newFallingPieceWidth = table.getn(oldFallingPiece[2])
-	newFallingPieceHeight = table.getn(oldFallingPiece)
+	newFallingPieceWidth = table.getn(oldFallingPiece.blockArr[2])
+	newFallingPieceHeight = table.getn(oldFallingPiece.blockArr)
 
 	newFallingPieceGrid = {}
 
@@ -396,8 +410,8 @@ function rotateWithMath()
 
 	for i = 1, newFallingPieceHeight do
 		for j=1, newFallingPieceWidth do
-			if oldFallingPiece[i][j] == true then
-				temp = oldFallingPiece[i][j]
+			if oldFallingPiece.blockArr[i][j] == true then
+				temp = oldFallingPiece.blockArr[i][j]
 
 				pivotY = 2
 				pivotX = 3
@@ -417,55 +431,21 @@ function rotateWithMath()
 		end
 	end
 
+	for i = 1, newFallingPieceHeight do
+		for j=1, newFallingPieceWidth do
+				if newFallingPieceGrid[i][j] then
+					io.write("1 ")
+				else
+					io.write("0 ")
+				end
+		end
+		print()
+	end
+	print(classFallingPiece.name)
+	print("-------")
+
 	return newFallingPieceGrid
 end
-
-
-
-
--- function fallingPieceIsLegal(drow, dcol)
-
--- 	canMove = true
-
--- 	for i=1, table.getn(fallingPiece) do
--- 		for j=1, table.getn(fallingPiece[2]) do
--- 			if fallingPiece[i][j] == true then
--- 				--print(fallingPiece)
--- 				if fallingPieceCol+j < 1 then
--- 					canMove = false
--- 				elseif fallingPieceCol+j > GRID_WIDTH then
--- 					canMove = false
--- 				elseif fallingPieceRow+i < 0 then
--- 					canMove = false
--- 				elseif fallingPieceRow+i > GRID_HEIGHT then
--- 					canMove = false
--- 				elseif grid[fallingPieceRow+i][fallingPieceCol+j].blockColor ~= "NULL" then
--- 					canMove = false
--- 				end
--- 			end
--- 		end
--- 	end
-
--- 	return canMove
--- end
-
--- --Moves a piece by a certian amount of rows and columns
--- function moveFallingPiece(drow, dcol)
--- 	--Make the move
--- 	fallingPieceRow = fallingPieceRow + drow
--- 	fallingPieceCol = fallingPieceCol + dcol
-
--- 	--Check to see if it won't overshoot the board
--- 	if not fallingPieceIsLegal(drow, dcol) then
--- 		--If it does we simply move it back
--- 		fallingPieceRow = fallingPieceRow - drow
--- 		fallingPieceCol = fallingPieceCol - dcol
--- 		return false
--- 	end
-
--- 	return true
-
--- end
 
 --##################################################
 
